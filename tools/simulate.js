@@ -20,8 +20,13 @@ function run(label, shouldCollect) {
     spinsInRound++;
     for (const e of res.events) {
       if (e.type === 'top') tops++;
-      if (e.type === 'allSummits') { returned += e.paid; allSummits++; spinsInRound = 0; }
-      if (e.type === 'bonusStart') engine.spinWheel();
+      if (e.type === 'allSummits') { allSummits++; spinsInRound = 0; }
+      if (e.type === 'bonusStart') {
+        // Glücksscheibe bis zum Ende drehen (Nochmal-drehen-Ketten), Seilbahn auf die Pistenraupe
+        do engine.spinWheel();
+        while (!engine.bonus.wheelDone);
+        if (engine.bonus.cablePending) engine.chooseCable(2);
+      }
       if (e.type === 'bonusEnd') { returned += e.paid; bonusWon += e.paid; spinsInRound = 0; }
       if (e.type === 'reset') { resets++; spinsInRound = 0; }
     }

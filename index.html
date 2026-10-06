@@ -2,21 +2,30 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#070b1d">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#010209">
+  <meta name="description" content="Susak Peaks – Ein-Walzen-Slot: Lass Taschenmesser, Adler und Pistenraupe bis zum Gipfel steigen.">
   <title>Susak Peaks</title>
+  <!-- Progressive Web App -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icons/favicon-64.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Susak Peaks">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Unbounded:wght@500;700;800&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=26">
+  <!-- Schriften blockieren den ersten Bildaufbau nicht (der Ladebildschirm wartet auf sie) -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Unbounded:wght@500;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Unbounded:wght@500;700;800&display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="css/style.css?v=79">
 </head>
 <body>
   <div class="sky" aria-hidden="true">
+    <canvas class="sky__stars" id="stars"></canvas>
     <div class="sky__aurora"></div>
-    <div class="sky__stars"></div>
-    <div class="sky__stars sky__stars--twinkle"></div>
-    <div class="sky__moon"></div>
-    <canvas class="sky__snow" id="snow"></canvas>
+    <div class="sky__twinkle"></div>
   </div>
 
   <div class="app">
@@ -96,8 +105,8 @@
           <button class="round-btn" id="bet-up" aria-label="Einsatz erhöhen">+</button>
         </div>
 
-        <button class="stat stat--collect" id="btn-collect" aria-label="Cashpot sammeln">
-          <span class="stat__label">Sammeln</span>
+        <button class="stat stat--collect" id="btn-collect" aria-label="Cashpot gambeln">
+          <span class="stat__label">Gambeln</span>
           <strong class="stat__value" id="collect-value">$0</strong>
         </button>
 
@@ -112,9 +121,6 @@
               <label class="auto__field">Automatisch sammeln
                 <select id="auto-collect"></select>
               </label>
-              <label class="auto__field">Verlustlimit in $
-                <input type="number" id="auto-loss" min="1" step="1" inputmode="numeric" placeholder="kein Limit">
-              </label>
               <label class="auto__check"><input type="checkbox" id="auto-stop-summit" checked> Bei Gipfel oder König anhalten</label>
             </div>
           </div>
@@ -126,16 +132,54 @@
     </footer>
   </div>
 
-  <dialog class="info-dialog glass" id="info-dialog">
-    <form method="dialog">
-      <h2>So wird gespielt</h2>
-      <ul class="symbol-list" id="symbolList"></ul>
-      <p>Jeder Spin kostet den Einsatz. Ein passendes Symbol bringt seinen Berg ein Lager höher. Der Cashpot ist die Summe aller erreichten Lager plus aller Gipfelgewinne.</p>
-      <p>Am Gipfel wandert der Gipfelpreis in den Cashpot und der Berg bleibt oben – jeder weitere Treffer legt den Gipfelpreis noch einmal hinein. Sammeln zahlt den Cashpot aus und schickt alle Bergsteiger zurück ins Tal. Der Teufel löscht alles – auch die Gipfelgewinne. Solange eine Runde läuft, bleibt der Einsatz gesperrt.</p>
-      <p>Stehen alle drei Berge am Gipfel, wird der Cashpot ausgezahlt und die Bergretter-Freispiele beginnen: Zuerst wird die Glücksscheibe gedreht – ihr Multiplikator (×2 bis ×10) gilt für alle Gewinne im Bonus. Es folgen Freispiele ohne Einsatz und ohne Teufel: An seiner Stelle kommt der Bergretter und bringt den niedrigsten Berg ein Lager höher. Der Bonus-Cashpot wird am Ende automatisch ausgezahlt.</p>
-      <p>Beim Sammeln geht es ins Susak Casino: Rate, ob die nächste Karte rot oder schwarz ist. Richtig verdoppelt den Gewinn, falsch halbiert ihn – so oft du willst, bis du kassierst oder nichts mehr übrig ist.</p>
-      <p class="keys">Leertaste dreht oder stoppt die Walze, C sammelt. Im Casino: R für Rot, S für Schwarz, Enter kassiert. Turbo verkürzt jeden Spin.</p>
-      <button class="info-close">Schließen</button>
+  <dialog class="info-dialog glass" id="info-dialog" aria-labelledby="info-title">
+    <form method="dialog" class="info">
+      <header class="info__head">
+        <h2 id="info-title">So wird gespielt</h2>
+        <button class="info__x" value="close" aria-label="Schließen">✕</button>
+      </header>
+
+      <div class="info__body">
+        <!-- Symbole als Kacheln (werden aus der Konfiguration gebaut) -->
+        <ul class="sym-grid" id="symbolList"></ul>
+
+        <h3 class="info__sub">Ablauf</h3>
+        <ol class="steps">
+          <li><span class="steps__icon">🎰</span><b>Spin</b><span>kostet den Einsatz</span></li>
+          <li><span class="steps__icon">⛰️</span><b>Klettern</b><span>Symbol bringt seinen Berg 1 Lager höher – der Cashpot wächst</span></li>
+          <li><span class="steps__icon">🚩</span><b>Gipfel</b><span>Gipfelpreis in den Cashpot, der Berg bleibt oben</span></li>
+          <li><span class="steps__icon">🃏</span><b>Gambeln</b><span>Cashpot ins Casino: Rot oder Schwarz – richtig ×2, falsch ÷2</span></li>
+        </ol>
+
+        <h3 class="info__sub">Bergretter-Bonus</h3>
+        <div class="chain" aria-label="3 Gipfel, dann Glücksscheibe, dann 8 Freispiele, erneut 3 Gipfel geben 8 weitere">
+          <div class="chain__item"><span class="chain__icon">⛰️⛰️⛰️</span><span>alle 3 Gipfel</span></div>
+          <span class="chain__arrow">→</span>
+          <div class="chain__item"><span class="chain__icon">🎡</span><span>Glücksscheibe</span></div>
+          <span class="chain__arrow">→</span>
+          <div class="chain__item"><span class="chain__icon" id="info-helmet">⛑️</span><span>8 Freispiele</span></div>
+        </div>
+        <ul class="facts">
+          <li><span>❌❄️</span>kein Schneesturm – stattdessen kommt der Bergretter</li>
+          <li><span>⛑️</span>Bergretter: +1 Lager und Multiplikator +1</li>
+          <li><span>🔁</span>wieder 3 Gipfel: +8 Freispiele</li>
+          <li><span>🔒</span>Gipfel-Cashpot und Jackpot sind sicher</li>
+          <li><span>💰</span>alles zusammen nach den Freispielen ausgezahlt</li>
+        </ul>
+
+        <h3 class="info__sub">Glücksscheibe</h3>
+        <p class="info__lead">Jedes Feld gibt einen <b>Multiplikator</b> für alle Freispiel-Gewinne, Sonderfelder zusätzlich ein Extra.</p>
+        <ul class="wheel-legend" id="wheel-legend"></ul>
+
+        <h3 class="info__sub info__keys">Tasten</h3>
+        <ul class="keys">
+          <li><kbd>Leertaste</kbd>Spin / Stopp</li>
+          <li><kbd>C</kbd>Gambeln</li>
+          <li><kbd>R</kbd><kbd>S</kbd>Rot / Schwarz</li>
+          <li><kbd>Enter</kbd>Kassieren</li>
+          <li><kbd>⚡</kbd>Turbo</li>
+        </ul>
+      </div>
     </form>
   </dialog>
 
@@ -146,7 +190,7 @@
       <h2 class="bonus-card__title" id="bonus-title">Bergretter-Freispiele</h2>
       <p class="bonus-card__amount" id="bonus-amount"></p>
       <div class="bonus-stage" id="bonus-stage" hidden>
-        <img class="bonus-hero" src="assets/bergretter.webp" alt="Bergretter in roter Ausrüstung">
+        <img class="bonus-hero" draggable="false" loading="lazy" decoding="async" src="assets/bergretter.webp" alt="Bergretter in roter Ausrüstung">
         <div class="wheel" id="wheel">
           <div class="wheel__disc" id="wheel-disc"></div>
           <div class="wheel__pointer" aria-hidden="true"></div>
@@ -154,11 +198,12 @@
         </div>
       </div>
       <p class="bonus-card__text" id="bonus-text"></p>
+      <div class="bonus-choice" id="bonus-choice" hidden></div>
       <button class="bonus-card__btn" id="bonus-btn">Freispiele starten</button>
     </div>
   </div>
 
-  <!-- Kartenspiel Rot oder Schwarz im Susak Casino (öffnet sich beim Sammeln) -->
+  <!-- Kartenspiel Rot oder Schwarz im Susak Casino (öffnet sich beim Gambeln) -->
   <div class="gamble" id="gamble" hidden role="dialog" aria-modal="true" aria-labelledby="gamble-sign">
     <div class="gamble__bg" aria-hidden="true">
       <div class="gamble__wall"></div>
@@ -171,7 +216,7 @@
     </h2>
     <div class="gamble__stage">
       <div class="gamble__dealer" id="gamble-dealer">
-        <img id="gamble-img" src="assets/dealer-wait.webp" alt="Der Bergretter mischt am Kartentisch">
+        <img id="gamble-img" draggable="false" loading="lazy" decoding="async" src="assets/dealer-wait.webp" alt="Der Bergretter mischt am Kartentisch">
         <!-- Symbole auf der leeren Karte im Bild -->
         <div class="gamble__card" id="gamble-card" hidden>
           <span class="gamble__corner" id="gamble-corner"><b>A</b><i>♠</i></span>
@@ -202,10 +247,42 @@
   </div>
 
   <div class="flash" id="flash" aria-hidden="true"></div>
+  <!-- Schneesturm: Vereisung am Bildschirmrand + Böe über alles (nur kurz aktiv) -->
+  <div class="frost" id="frost" aria-hidden="true"></div>
+  <canvas class="storm" id="storm" aria-hidden="true"></canvas>
 
-  <script src="js/config.js?v=26"></script>
-  <script src="js/engine.js?v=26"></script>
-  <script src="js/sfx.js?v=26"></script>
-  <script src="js/ui.js?v=26"></script>
+  <!-- Ladebildschirm: liegt vor allem anderen und blendet sich nach „Spiel starten" aus.
+       Grundstil inline, damit er sofort steht – noch bevor das Stylesheet geladen ist. -->
+  <div class="boot" id="boot" style="position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:#010209;color:#eef3ff;font-family:system-ui,sans-serif">
+    <div class="boot__logo">
+      <svg class="boot__mark" viewBox="0 0 48 28" aria-hidden="true">
+        <defs>
+          <linearGradient id="boot-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#ffffff"/><stop offset="0.5" stop-color="#a6ecff"/><stop offset="1" stop-color="#c08bff"/>
+          </linearGradient>
+        </defs>
+        <path d="M2 26 L15 9 L21 16 L29 3 L46 26" fill="none" stroke="url(#boot-grad)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="M25.5 8 L29 3 L32.6 8 L30.4 7 L29 8.6 L27.5 7 Z" fill="#fff"/>
+      </svg>
+      <span class="boot__title">Susak Peaks</span>
+    </div>
+    <div class="boot__bar"><i id="boot-fill"></i></div>
+    <p class="boot__status" id="boot-status">Lade …</p>
+    <button class="boot__start" id="boot-start" hidden>Spiel starten</button>
+    <button class="boot__install" id="boot-install" hidden>App installieren</button>
+  </div>
+
+  <script src="js/config.js?v=79"></script>
+  <script src="js/engine.js?v=79"></script>
+  <script src="js/sfx.js?v=79"></script>
+  <script src="js/particles.js?v=79"></script>
+  <script src="js/ui.js?v=79"></script>
+  <script src="js/boot.js?v=79"></script>
+  <script>
+    // Service Worker: nur über HTTPS oder localhost möglich (Browser-Vorgabe)
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
 </body>
 </html>

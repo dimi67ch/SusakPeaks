@@ -19,7 +19,6 @@
       spins: [10, 25, 50, 100],
       collectAt: [2, 4, 6, 10, 15, 20], // Auto-Sammeln ab Cashpot ≥ x × Einsatz
       defaultCollectAt: 6,
-      defaultLossLimit: 2000,            // in Dollar, leer = kein Limit
     },
 
     // Drei Gewinnleitern. steps[i] = Wert der Stufe i+1 im Cashpot.
@@ -29,35 +28,54 @@
       // bonus: Platzhalter für spätere Bonusfunktionen (wird beim Erreichen der Spitze gemeldet).
       // peak: Lage des Berges in der Landschaft (in % der Bühne): x = Gipfel horizontal,
       //       y = Gipfelhöhe von oben, w = halbe Bergbreite am Fuß.
-      { id: 'A', name: 'Platzhalter A', icon: '🌲', color: '#46e3a0', peak: { x: 19, y: 34, w: 22 },
-        steps: [0.3, 0.8, 1.7, 3.2, 5.3], topPrize: 5.5, bonus: null },
-      { id: 'B', name: 'Platzhalter B', icon: '🦅', color: '#5aa9ff', peak: { x: 81, y: 24, w: 22 },
-        steps: [0.4, 1, 2.1, 3.9, 6.2], topPrize: 8, bonus: null },
-      { id: 'C', name: 'Platzhalter C', icon: '💎', color: '#c08bff', peak: { x: 50, y: 9, w: 26 },
-        steps: [0.6, 1.6, 3.2, 5.5, 9.2], topPrize: 12, bonus: null },
+      { id: 'A', name: 'Taschenmesser', icon: '🔪', image: 'assets/knife.webp', color: '#46e3a0', peak: { x: 19, y: 34, w: 22 },
+        steps: [0.3, 0.7, 1.5, 2.8, 4.7], topPrize: 4.8, bonus: null },
+      { id: 'B', name: 'Adler', icon: '🦅', image: 'assets/eagle.webp', color: '#5aa9ff', peak: { x: 81, y: 24, w: 22 },
+        steps: [0.4, 0.9, 1.8, 3.4, 5.5], topPrize: 7, bonus: null },
+      { id: 'C', name: 'Pistenraupe', icon: '🚜', image: 'assets/snowcat.webp', color: '#c08bff', peak: { x: 50, y: 9, w: 26 },
+        steps: [0.5, 1.4, 2.8, 4.8, 8.1], topPrize: 10.6, bonus: null },
     ],
 
     // Walzensymbole mit Gewichtung (Wahrscheinlichkeit = weight / Summe aller weights).
     // effect: 'ladder' (eine Leiter +1), 'all' (alle Leitern +1), 'king' (siehe kingMode),
     //         'reset' (Leitern und Cashpot auf 0)
     symbols: [
-      { id: 'A',     name: 'Platzhalter A', icon: '🌲', weight: 30, effect: 'ladder', ladder: 0 },
-      { id: 'B',     name: 'Platzhalter B', icon: '🦅', weight: 24, effect: 'ladder', ladder: 1 },
-      { id: 'C',     name: 'Platzhalter C', icon: '💎', weight: 16, effect: 'ladder', ladder: 2 },
-      { id: 'SUN',   name: 'Sonne (Wild)',  icon: '☀️', weight: 6,  effect: 'all' },
-      { id: 'KING',  name: 'König',         icon: '👑', weight: 0.74, effect: 'king' },
-      { id: 'DEVIL', name: 'Teufel',        icon: '😈', weight: 15.72, effect: 'reset' },
+      { id: 'A',     name: 'Taschenmesser', icon: '🔪', image: 'assets/knife.webp', weight: 30, effect: 'ladder', ladder: 0 },
+      { id: 'B',     name: 'Adler',         icon: '🦅', image: 'assets/eagle.webp', weight: 24, effect: 'ladder', ladder: 1 },
+      { id: 'C',     name: 'Pistenraupe',   icon: '🚜', image: 'assets/snowcat.webp', weight: 16, effect: 'ladder', ladder: 2 },
+      { id: 'SUN',   name: 'Sonne (Wild)',  icon: '☀️', image: 'assets/sun.webp', weight: 6,  effect: 'all' },
+      { id: 'KING',  name: 'König',         icon: '👑', image: 'assets/king.webp', weight: 0.46, effect: 'king' }, // ca. 1 von 200 Spins
+      { id: 'DEVIL', name: 'Schneesturm',   icon: '❄️', image: 'assets/snowflake.webp', weight: 15.72, effect: 'reset' },
     ],
 
     // Bergretter-Freispiele: starten, wenn alle drei Berge am Gipfel stehen (Cashpot wird vorher ausgezahlt).
     // Zuerst wird die Glücksscheibe gedreht – ihr Multiplikator gilt für alle Beträge im Bonus.
-    // Ohne Einsatz, ohne Teufel – an seiner Stelle bringt der Bergretter den niedrigsten Berg ein Lager höher.
+    // Ohne Einsatz, ohne Schneesturm – an seiner Stelle bringt der Bergretter den niedrigsten Berg ein Lager höher.
+    // Erreichen im Bonus wieder alle drei Berge den Gipfel, gibt es weitere Freispiele (Berge starten neu).
     // Der Bonus-Cashpot wird am Ende automatisch ausgezahlt.
     freeSpins: {
       count: 8,
-      // Felder der Glücksscheibe im Uhrzeigersinn (alle gleich groß = gleich wahrscheinlich)
-      wheel: [2, 3, 2, 5, 2, 3, 2, 10],
-      rescuer: { id: 'RESCUE', name: 'Bergretter', icon: '⛑️' },
+      retrigger: 8, // +8 Freispiele, wenn im Bonus wieder alle drei Gipfel erreicht werden
+      // Glücksscheibe: Felder im Uhrzeigersinn, alle gleich groß (= gleich wahrscheinlich).
+      // mult: Multiplikator (Felder auf einer Nochmal-drehen-Kette addieren sich)
+      // respin: nochmal drehen · spins: Extra-Freispiele · camp: alle Berge starten auf diesem Lager
+      // cable: Seilbahn – gewählter Berg steigt bei jedem Treffer 2 Lager · gift: ein Berg startet am Gipfel
+      // jackpot: Sofortgewinn (× Einsatz) · alarm: Bergretter doppelt so oft · gold: Bergretter +2 statt +1
+      wheel: [
+        { id: 'x3',      label: '×3',  icon: '',   name: '×3',                 mult: 3 },
+        { id: 'cable',   label: '×2',  icon: '🚡', name: 'Seilbahn',           mult: 2, cable: true },
+        { id: 'x10',     label: '×10', icon: '',   name: '×10',                mult: 10 },
+        { id: 'alarm',   label: '×3',  icon: '🚨', name: 'Bergretter-Alarm',   mult: 3, alarm: true },
+        { id: 'spins',   label: '×2',  icon: '🎟️', name: '+3 Freispiele',      mult: 2, spins: 3 },
+        { id: 'jackpot', label: '250×', icon: '💎', name: 'Jackpot',           mult: 2, jackpot: 250 },
+        { id: 'x5',      label: '×5',  icon: '',   name: '×5',                 mult: 5 },
+        { id: 'gold',    label: '×3',  icon: '🥇', name: 'Gold-Bergretter',    mult: 3, gold: true },
+        { id: 'camp',    label: '×2',  icon: '⛺', name: 'Basislager',         mult: 2, camp: 2 },
+        { id: 'again',   label: '×2',  icon: '🔁', name: 'Nochmal drehen',     mult: 2, respin: true },
+        { id: 'gift',    label: '×2',  icon: '🚩', name: 'Gipfel-Geschenk',    mult: 2, gift: true },
+      ],
+      // Bergretter: bringt den niedrigsten Berg 1 Lager höher und erhöht den Multiplikator um 1
+      rescuer: { id: 'RESCUE', name: 'Bergretter', icon: '⛑️', image: 'assets/helmet.webp' },
     },
 
     // Kartenspiel Rot oder Schwarz beim Sammeln: richtig = ×2, falsch = × loseFactor (abgerundet).

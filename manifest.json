@@ -1,0 +1,19 @@
+{
+  "name": "Susak Peaks",
+  "short_name": "Susak Peaks",
+  "description": "Ein-Walzen-Slot: Lass drei Berge bis zum Gipfel steigen – aber Vorsicht vor dem Schneesturm.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#010209",
+  "theme_color": "#010209",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
