@@ -19,7 +19,7 @@
   <!-- Schriften blockieren den ersten Bildaufbau nicht (der Ladebildschirm wartet auf sie) -->
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Unbounded:wght@500;700;800&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Unbounded:wght@500;700;800&display=swap" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="css/style.css?v=79">
+  <link rel="stylesheet" href="css/style.css?v=88">
 </head>
 <body>
   <div class="sky" aria-hidden="true">
@@ -161,7 +161,7 @@
         </div>
         <ul class="facts">
           <li><span>❌❄️</span>kein Schneesturm – stattdessen kommt der Bergretter</li>
-          <li><span>⛑️</span>Bergretter: +1 Lager und Multiplikator +1</li>
+          <li><span>⛑️</span>Bergretter: +1 Lager, Multiplikator +1 und +1 Freispiel</li>
           <li><span>🔁</span>wieder 3 Gipfel: +8 Freispiele</li>
           <li><span>🔒</span>Gipfel-Cashpot und Jackpot sind sicher</li>
           <li><span>💰</span>alles zusammen nach den Freispielen ausgezahlt</li>
@@ -193,6 +193,7 @@
         <img class="bonus-hero" draggable="false" loading="lazy" decoding="async" src="assets/bergretter.webp" alt="Bergretter in roter Ausrüstung">
         <div class="wheel" id="wheel">
           <div class="wheel__disc" id="wheel-disc"></div>
+          <div class="wheel__frame" id="wheel-frame" aria-hidden="true"></div>
           <div class="wheel__pointer" aria-hidden="true"></div>
           <div class="wheel__hub" id="wheel-hub">?</div>
         </div>
@@ -272,12 +273,12 @@
     <button class="boot__install" id="boot-install" hidden>App installieren</button>
   </div>
 
-  <script src="js/config.js?v=79"></script>
-  <script src="js/engine.js?v=79"></script>
-  <script src="js/sfx.js?v=79"></script>
-  <script src="js/particles.js?v=79"></script>
-  <script src="js/ui.js?v=79"></script>
-  <script src="js/boot.js?v=79"></script>
+  <script src="js/config.js?v=88"></script>
+  <script src="js/engine.js?v=88"></script>
+  <script src="js/sfx.js?v=88"></script>
+  <script src="js/particles.js?v=88"></script>
+  <script src="js/ui.js?v=88"></script>
+  <script src="js/boot.js?v=88"></script>
   <script>
     // Service Worker: nur über HTTPS oder localhost möglich (Browser-Vorgabe)
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {

@@ -13,7 +13,7 @@
     balance: $('balance'), bet: $('bet'), betUp: $('bet-up'), betDown: $('bet-down'),
     spin: $('btn-spin'), collect: $('btn-collect'), collectValue: $('collect-value'),
     turbo: $('btn-turbo'), sound: $('btn-sound'), info: $('btn-info'), infoDialog: $('info-dialog'),
-    auto: $('btn-auto'), autoMenu: $('auto-menu'), autoCounts: $('auto-counts'), autoCount: $('auto-count'),
+    wheelFrame: $('wheel-frame'), auto: $('btn-auto'), autoMenu: $('auto-menu'), autoCounts: $('auto-counts'), autoCount: $('auto-count'),
     autoCollect: $('auto-collect'), autoStopSummit: $('auto-stop-summit'),
     cashpotLabel: $('cashpot-label'),
     bonusScreen: $('bonus-screen'), bonusIcon: $('bonus-icon'), bonusTitle: $('bonus-title'),
@@ -301,7 +301,7 @@
       case 'ladder': return `Bringt den Berg „${CONFIG.ladders[sym.ladder].name}“ ein Lager höher.`;
       case 'all': return 'Wild: Bringt alle drei Berge ein Lager höher.';
       case 'reset': return 'Fegt alle Bergsteiger ins Tal und löscht den Cashpot – auch die Gipfelgewinne.';
-      case 'rescue': return 'Nur in den Freispielen statt des Schneesturms: bringt den niedrigsten Berg ein Lager höher.';
+      case 'rescue': return 'Nur in den Freispielen statt des Schneesturms: niedrigster Berg +1 Lager, Multiplikator +1 und +1 Freispiel.';
       case 'king':
         return {
           summit: 'Alle drei Berge erreichen sofort den Gipfel – drei Gipfelpreise in den Cashpot, er wird gesichert und die Bergretter-Freispiele starten!',
@@ -362,6 +362,7 @@
     el.sound.classList.toggle('is-muted', sfx.muted);
     el.auto.classList.toggle('is-active', auto.active);
     el.auto.disabled = bonusRunning;
+    if (bonusRunning && !el.autoMenu.hidden) el.autoMenu.hidden = true;
     // Zähler am Spin-Button: verbleibende Freispiele oder Autoplay-Spins
     el.autoCount.textContent = engine.bonus ? String(engine.bonus.left) : auto.active ? String(auto.remaining) : '';
     el.spin.classList.toggle('is-auto', auto.active && !bonusRunning);
@@ -708,10 +709,6 @@
           <stop offset="0.9" stop-color="#fff" stop-opacity="0.1"/>
           <stop offset="1" stop-color="#fff" stop-opacity="0.22"/>
         </radialGradient>
-        <linearGradient id="wheel-rim" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#fff3c9"/><stop offset="0.45" stop-color="#ffd36e"/>
-          <stop offset="0.7" stop-color="#b07400"/><stop offset="1" stop-color="#ffe7a8"/>
-        </linearGradient>
       </defs>
       <circle r="99" fill="#1a1230"/>`;
     fields.forEach((f, i) => {
@@ -726,21 +723,27 @@
       const [x, y] = pt(i * seg - seg / 2, R);
       svg += `<line x1="0" y1="0" x2="${x}" y2="${y}" stroke="#ffd36e" stroke-opacity="0.75" stroke-width="1.2"/>`;
     });
-    // Beschriftung seitlich entlang des Radius (wie bei einem echten Glücksrad) – so passen auch
-    // längere Werte wie „250×“: Icon außen am Rand, der Wert läuft von dort Richtung Mitte
-    // Schriftgröße so wählen, dass der Wert sicher zwischen Nabe und Icon bzw. Rand passt
+    // Beschriftung seitlich entlang des Radius (wie bei einem echten Glücksrad).
+    // Reine Multiplikatoren: große Zahl. Sonderfelder: großes Symbol am Rand, darunter ein
+    // Stichwort, was passiert – der Multiplikator steht klein daneben.
+    // Schriftgröße so wählen, dass der Text sicher zwischen Nabe und Rand bzw. Symbol passt
     // (Unbounded ist breit: ca. 0,84 × Schriftgröße pro Zeichen)
     const HUB = 35;
     const fit = (text, from, to, max) => Math.min(max, (to - from) / (text.length * 0.84));
     fields.forEach((f, i) => {
       const a = i * seg;
       if (f.icon) {
-        const [ix, iy] = pt(a, 81);
+        const [ix, iy] = pt(a, 80);
         svg += `<text x="${ix}" y="${iy}" transform="rotate(${a} ${ix} ${iy})" class="wheel__icon">${f.icon}</text>`;
-        const to = 71; // Icon reicht bis ca. r = 72
-        const size = fit(f.label, HUB, to, 17).toFixed(1);
-        const [tx, ty] = pt(a, (HUB + to) / 2);
-        svg += `<text x="${tx}" y="${ty}" transform="rotate(${a - 90} ${tx} ${ty})" class="wheel__label" font-size="${size}">${f.label}</text>`;
+        // im gedrehten Koordinatensystem läuft x nach außen, y quer über das Feld
+        const from = HUB + 1;
+        const to = 69;
+        const word = f.short || f.label;
+        // Stichwörter in der schmaleren Manrope (Großbuchstaben ca. 0,78 × Schriftgröße pro Zeichen)
+        const size = Math.min(12, (to - from) / (word.length * 0.78));
+        svg += `<g transform="rotate(${a - 90})">
+          <text x="${(from + to) / 2}" y="${-3.2}" class="wheel__label wheel__word" font-size="${size.toFixed(1)}">${word}</text>
+          <text x="${(from + to) / 2}" y="${size / 2 + 3.4}" class="wheel__label wheel__mult" font-size="7">×${f.mult}</text></g>`;
       } else {
         const to = 86;
         const size = fit(f.label, HUB, to, 23).toFixed(1);
@@ -748,14 +751,33 @@
         svg += `<text x="${tx}" y="${ty}" transform="rotate(${a - 90} ${tx} ${ty})" class="wheel__label" font-size="${size}">${f.label}</text>`;
       }
     });
-    // Goldrand mit Lichtern und dunkler Innenring um die Nabe
-    svg += `<circle r="${R + 4}" fill="none" stroke="url(#wheel-rim)" stroke-width="8"/>`;
-    for (let k = 0; k < n * 2; k++) {
-      const [bx, by] = pt(k * (seg / 2), R + 4);
-      svg += `<circle cx="${bx}" cy="${by}" r="2.3" class="wheel__bulb"/>`;
-    }
+    // dunkler Innenring um die Nabe
     svg += `<circle r="31" fill="#120c22" stroke="#ffd36e" stroke-width="2"/></svg>`;
     el.wheelDisc.innerHTML = svg;
+
+    // Goldrand mit Lichtern als feststehender Rahmen (wie bei einem echten Glücksrad).
+    // Er liegt über der Scheibe, damit die drehende Scheibe nie neu gezeichnet werden muss –
+    // nur zwei Lichtergruppen blenden abwechselnd, ohne teure Filter.
+    let frame = `<svg viewBox="-100 -100 200 200" aria-hidden="true">
+      <defs>
+        <linearGradient id="wheel-rim" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#fff3c9"/><stop offset="0.45" stop-color="#ffd36e"/>
+          <stop offset="0.7" stop-color="#b07400"/><stop offset="1" stop-color="#ffe7a8"/>
+        </linearGradient>
+        <radialGradient id="wheel-bulb">
+          <stop offset="0" stop-color="#fffbe8"/><stop offset="0.45" stop-color="#ffe9a8"/>
+          <stop offset="0.6" stop-color="#ffd36e" stop-opacity="0.55"/><stop offset="1" stop-color="#ffd36e" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle r="${R + 4}" fill="none" stroke="url(#wheel-rim)" stroke-width="8"/>`;
+    const bulbs = ['', ''];
+    for (let k = 0; k < n * 2; k++) {
+      const [bx, by] = pt(k * (seg / 2), R + 4);
+      bulbs[k % 2] += `<circle cx="${bx}" cy="${by}" r="4.6"/>`;
+    }
+    frame += `<g class="wheel__bulbs" fill="url(#wheel-bulb)">${bulbs[0]}</g>
+      <g class="wheel__bulbs wheel__bulbs--b" fill="url(#wheel-bulb)">${bulbs[1]}</g></svg>`;
+    el.wheelFrame.innerHTML = frame;
 
     // Legende in den Spielregeln
     if (el.wheelLegend) {
@@ -798,7 +820,7 @@
       ? `<b>🚡 ${CONFIG.ladders[b.cable].name}</b> steigt bei jedem Treffer 2 Lager statt 1.`
       : '<b>🚡 Wähle einen Berg</b> – er steigt bei jedem Treffer 2 Lager statt 1.');
     if (gift) lines.push(`<b>🚩 ${CONFIG.ladders[gift.ladder].name}</b> startet direkt am Gipfel – sein Gipfelpreis liegt schon im Cashpot.`);
-    if (f.alarm) lines.push('<b>🚨 Doppelt so viele Bergretter</b> – jeder bringt +1 Lager und +1 Multiplikator.');
+    if (f.alarm) lines.push('<b>🚨 Doppelt so viele Bergretter</b> – jeder bringt +1 Lager, +1 Multiplikator und +1 Freispiel.');
     if (f.gold) lines.push('<b>🥇 Gold-Bergretter</b> – jeder Bergretter erhöht den Multiplikator um 2 statt 1.');
     return lines.map((l) => `<span class="bonus-card__line">${l}</span>`).join('');
   }
@@ -1011,6 +1033,7 @@
         <div class="bigwin__hint">Tippen zum Überspringen</div>
       </div>`;
     document.body.append(ov);
+    document.body.classList.add('has-bigwin'); // Deko dahinter anhalten
     requestAnimationFrame(() => ov.classList.add('is-open'));
     const tierEl = ov.querySelector('.bigwin__tier');
     const amountEl = ov.querySelector('.bigwin__amount');
@@ -1070,7 +1093,7 @@
         bigWinSkip = null;
         particles.stopFountain();
         ov.classList.remove('is-open');
-        setTimeout(() => { ov.remove(); resolve(); }, 350);
+        setTimeout(() => { ov.remove(); document.body.classList.remove('has-bigwin'); resolve(); }, 350);
       };
 
       bigWinSkip = () => (finished ? close() : complete());
@@ -1203,7 +1226,7 @@
       el.summitBank.classList.remove('is-up');
       void el.summitBank.offsetWidth;
       el.summitBank.classList.add('is-up');
-      say(`${symbol.icon} Bergretter: ×${rescue.multBefore} → ×${rescue.multAfter} · ${CONFIG.ladders[rescue.ladder].name} steigt`, 'bonus');
+      say(`${symbol.icon} Bergretter: ×${rescue.multBefore} → ×${rescue.multAfter} · ${CONFIG.ladders[rescue.ladder].name} steigt${rescue.extra ? ` · +${rescue.extra} Freispiel` : ''}`, 'bonus');
       return;
     }
     // Seilbahn erzeugt zwei Schritte am selben Berg – nach Bergen zählen, nicht nach Schritten
@@ -1257,15 +1280,16 @@
     const canvas = $('storm');
     if (!canvas || reducedMotion) return;
     const ctx = canvas.getContext('2d');
-    const dpr = Math.min(2, devicePixelRatio || 1);
+    // Schlieren sind ohnehin unscharf: einfache Auflösung reicht und spart auf dem Handy viel Füllarbeit
     const w = innerWidth;
     const h = innerHeight;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvas.width = w;
+    canvas.height = h;
+    // drei Strichstärken – jede Gruppe wird mit einem einzigen stroke() gezeichnet
+    const WIDTHS = [1, 1.8, 2.6];
     const streaks = Array.from({ length: Math.round(Math.min(160, (w * h) / 5000)) }, () => ({
       x: Math.random() * w * 1.4 - w * 0.4, y: Math.random() * h,
-      len: 18 + Math.random() * 46, v: 14 + Math.random() * 22, r: 0.8 + Math.random() * 1.8,
+      len: 18 + Math.random() * 46, v: 14 + Math.random() * 22, g: Math.floor(Math.random() * WIDTHS.length),
     }));
     const DURATION = 1500;
     const t0 = performance.now();
@@ -1273,26 +1297,31 @@
     const tick = (now) => {
       const p = (now - t0) / DURATION;
       if (p >= 1) {
-        ctx.clearRect(0, 0, w, h);
         canvas.classList.remove('is-on');
+        canvas.width = canvas.height = 1; // Speicher der Zeichenfläche wieder freigeben
         return;
       }
       const alpha = Math.sin(Math.PI * Math.min(1, p * 1.15)); // anschwellen und abklingen
       ctx.clearRect(0, 0, w, h);
       ctx.strokeStyle = '#eef7ff';
       ctx.lineCap = 'round';
+      ctx.globalAlpha = alpha * 0.75;
       for (const s of streaks) {
         s.x += s.v;
         s.y += s.v * 0.32;
         if (s.x > w + 60) { s.x = -60; s.y = Math.random() * h; }
         if (s.y > h + 20) s.y = -20;
-        ctx.globalAlpha = alpha * 0.75;
-        ctx.lineWidth = s.r;
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y);
-        ctx.lineTo(s.x - s.len, s.y - s.len * 0.32);
-        ctx.stroke();
       }
+      WIDTHS.forEach((lw, g) => {
+        ctx.lineWidth = lw;
+        ctx.beginPath();
+        for (const s of streaks) {
+          if (s.g !== g) continue;
+          ctx.moveTo(s.x, s.y);
+          ctx.lineTo(s.x - s.len, s.y - s.len * 0.32);
+        }
+        ctx.stroke();
+      });
       ctx.globalAlpha = 1;
       requestAnimationFrame(tick);
     };
@@ -1381,7 +1410,7 @@
     sfx.uiClick();
     el.gambleMsg.textContent = color === 'red' ? 'Rot gewählt … die Karte wird aufgedeckt' : 'Schwarz gewählt … die Karte wird aufgedeckt';
     el.gambleMsg.dataset.tone = '';
-    await sleep(turbo ? 300 : 700);
+    await sleep(350); // Turbo hat im Casino keinen Einfluss
 
     const r = engine.guessColor(color);
     // Karte zeigen: die Karte im Bild wird mit der echten Farbe überdeckt
@@ -1418,7 +1447,8 @@
     void el.gambleAmount.offsetWidth;
     el.gambleAmount.classList.add('is-pop');
 
-    await sleep(turbo ? 900 : 1600);
+    // Aufgedeckte Karte 1,5 s zeigen, dann die nächste Runde
+    await sleep(1500);
     if (r.busted) {
       closeGamble();
       say('🃏 Im Susak Casino alles verspielt', 'bad');
@@ -1601,7 +1631,7 @@
     let w = 0;
     let h = 0;
     const resize = () => {
-      const dpr = Math.min(2, devicePixelRatio || 1);
+      const dpr = Math.min(1.5, devicePixelRatio || 1); // kleine weiche Flocken brauchen kein Retina
       w = canvas.clientWidth;
       h = canvas.clientHeight;
       canvas.width = Math.max(1, w * dpr);

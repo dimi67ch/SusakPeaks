@@ -1,6 +1,6 @@
 // Susak Peaks – Service Worker: macht die App installierbar und offline startbar.
 // Strategie: erst Netzwerk (damit Updates sofort ankommen), ohne Verbindung aus dem Cache.
-const CACHE = 'susak-peaks-v12';
+const CACHE = 'susak-peaks-v13';
 
 const CORE = [
   './',

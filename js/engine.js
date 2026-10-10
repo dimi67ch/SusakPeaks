@@ -207,7 +207,11 @@
           // Bergretter: Multiplikator +1 (Gold-Bergretter: +2) und der niedrigste Berg steigt 1 Lager
           const multBefore = this.bonus.mult;
           this._addMult(this.bonus.gold ? 2 : 1);
-          events.push({ type: 'rescue', ladder: lowest, multBefore, multAfter: this.bonus.mult });
+          // … und bringt ein zusätzliches Freispiel mit
+          const extra = this.config.freeSpins.rescueSpins ?? 0;
+          this.bonus.left += extra;
+          this.bonus.total += extra;
+          events.push({ type: 'rescue', ladder: lowest, multBefore, multAfter: this.bonus.mult, extra });
           this._climb([lowest], events);
           break;
         }

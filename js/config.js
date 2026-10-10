@@ -29,11 +29,11 @@
       // peak: Lage des Berges in der Landschaft (in % der Bühne): x = Gipfel horizontal,
       //       y = Gipfelhöhe von oben, w = halbe Bergbreite am Fuß.
       { id: 'A', name: 'Taschenmesser', icon: '🔪', image: 'assets/knife.webp', color: '#46e3a0', peak: { x: 19, y: 34, w: 22 },
-        steps: [0.3, 0.7, 1.5, 2.8, 4.7], topPrize: 4.8, bonus: null },
+        steps: [0.23, 0.53, 1.14, 2.13, 3.57], topPrize: 3.65, bonus: null },
       { id: 'B', name: 'Adler', icon: '🦅', image: 'assets/eagle.webp', color: '#5aa9ff', peak: { x: 81, y: 24, w: 22 },
-        steps: [0.4, 0.9, 1.8, 3.4, 5.5], topPrize: 7, bonus: null },
+        steps: [0.3, 0.68, 1.37, 2.58, 4.18], topPrize: 5.32, bonus: null },
       { id: 'C', name: 'Pistenraupe', icon: '🚜', image: 'assets/snowcat.webp', color: '#c08bff', peak: { x: 50, y: 9, w: 26 },
-        steps: [0.5, 1.4, 2.8, 4.8, 8.1], topPrize: 10.6, bonus: null },
+        steps: [0.38, 1.06, 2.13, 3.65, 6.16], topPrize: 8.06, bonus: null },
     ],
 
     // Walzensymbole mit Gewichtung (Wahrscheinlichkeit = weight / Summe aller weights).
@@ -48,11 +48,11 @@
       { id: 'DEVIL', name: 'Schneesturm',   icon: '❄️', image: 'assets/snowflake.webp', weight: 15.72, effect: 'reset' },
     ],
 
-    // Bergretter-Freispiele: starten, wenn alle drei Berge am Gipfel stehen (Cashpot wird vorher ausgezahlt).
+    // Bergretter-Freispiele: starten, wenn alle drei Berge am Gipfel stehen (der Cashpot wird gesichert).
     // Zuerst wird die Glücksscheibe gedreht – ihr Multiplikator gilt für alle Beträge im Bonus.
     // Ohne Einsatz, ohne Schneesturm – an seiner Stelle bringt der Bergretter den niedrigsten Berg ein Lager höher.
     // Erreichen im Bonus wieder alle drei Berge den Gipfel, gibt es weitere Freispiele (Berge starten neu).
-    // Der Bonus-Cashpot wird am Ende automatisch ausgezahlt.
+    // Am Ende wird alles zusammen ausgezahlt: gesicherter Cashpot + Jackpot + Bonus-Cashpot.
     freeSpins: {
       count: 8,
       retrigger: 8, // +8 Freispiele, wenn im Bonus wieder alle drei Gipfel erreicht werden
@@ -60,19 +60,21 @@
       // mult: Multiplikator (Felder auf einer Nochmal-drehen-Kette addieren sich)
       // respin: nochmal drehen · spins: Extra-Freispiele · camp: alle Berge starten auf diesem Lager
       // cable: Seilbahn – gewählter Berg steigt bei jedem Treffer 2 Lager · gift: ein Berg startet am Gipfel
-      // jackpot: Sofortgewinn (× Einsatz) · alarm: Bergretter doppelt so oft · gold: Bergretter +2 statt +1
+      // jackpot: Gewinn (× Einsatz) · alarm: Bergretter doppelt so oft · gold: Bergretter +2 statt +1
+      // short: Stichwort auf dem Rad (Sonderfelder), der Multiplikator steht klein daneben
+      rescueSpins: 1, // jeder Bergretter im Bonus bringt +1 Freispiel
       wheel: [
         { id: 'x3',      label: '×3',  icon: '',   name: '×3',                 mult: 3 },
-        { id: 'cable',   label: '×2',  icon: '🚡', name: 'Seilbahn',           mult: 2, cable: true },
+        { id: 'cable',   label: '×2',  icon: '🚡', name: 'Seilbahn',           mult: 2, cable: true, short: 'LIFT' },
         { id: 'x10',     label: '×10', icon: '',   name: '×10',                mult: 10 },
-        { id: 'alarm',   label: '×3',  icon: '🚨', name: 'Bergretter-Alarm',   mult: 3, alarm: true },
-        { id: 'spins',   label: '×2',  icon: '🎟️', name: '+3 Freispiele',      mult: 2, spins: 3 },
-        { id: 'jackpot', label: '250×', icon: '💎', name: 'Jackpot',           mult: 2, jackpot: 250 },
+        { id: 'alarm',   label: '×3',  icon: '🚨', name: 'Bergretter-Alarm',   mult: 3, alarm: true, short: 'ALARM' },
+        { id: 'spins',   label: '×2',  icon: '🎟️', name: '+3 Freispiele',      mult: 2, spins: 3, short: '+3 FS' },
+        { id: 'jackpot', label: '250×', icon: '💎', name: 'Jackpot',           mult: 2, jackpot: 250, short: '250×' },
         { id: 'x5',      label: '×5',  icon: '',   name: '×5',                 mult: 5 },
-        { id: 'gold',    label: '×3',  icon: '🥇', name: 'Gold-Bergretter',    mult: 3, gold: true },
-        { id: 'camp',    label: '×2',  icon: '⛺', name: 'Basislager',         mult: 2, camp: 2 },
-        { id: 'again',   label: '×2',  icon: '🔁', name: 'Nochmal drehen',     mult: 2, respin: true },
-        { id: 'gift',    label: '×2',  icon: '🚩', name: 'Gipfel-Geschenk',    mult: 2, gift: true },
+        { id: 'gold',    label: '×3',  icon: '🥇', name: 'Gold-Bergretter',    mult: 3, gold: true, short: 'GOLD' },
+        { id: 'camp',    label: '×2',  icon: '⛺', name: 'Basislager',         mult: 2, camp: 2, short: 'LAGER' },
+        { id: 'again',   label: '×2',  icon: '🔁', name: 'Nochmal drehen',     mult: 2, respin: true, short: 'NOCHMAL' },
+        { id: 'gift',    label: '×2',  icon: '🚩', name: 'Gipfel-Geschenk',    mult: 2, gift: true, short: 'GIPFEL' },
       ],
       // Bergretter: bringt den niedrigsten Berg 1 Lager höher und erhöht den Multiplikator um 1
       rescuer: { id: 'RESCUE', name: 'Bergretter', icon: '⛑️', image: 'assets/helmet.webp' },
