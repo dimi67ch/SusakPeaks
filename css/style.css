@@ -391,16 +391,32 @@ button:disabled { cursor: not-allowed; }
 .peak-name__icon { font-size: 1.3em; line-height: 1; }
 .peak-name__img { width: 1.6em; height: 1.6em; object-fit: contain; display: block; }
 
-/* Schneesturm: Whiteout über den Bergen, die Landschaft bebt */
-.range.is-struck .range__plot { animation: struck 1.4s ease-out; }
+/* Schneesturm: Whiteout über den Bergen, die Landschaft bebt.
+   Nur Verschieben und Deckkraft – beides übernimmt die Grafikkarte, ohne die Landschaft neu zu zeichnen
+   (ein animierter Helligkeitsfilter würde auf dem Handy jedes Bild die ganze Berglandschaft neu rechnen). */
+.range.is-struck .range__plot { animation: struck 1.4s ease-out; will-change: transform; }
 @keyframes struck {
-  0% { filter: brightness(1) saturate(1); translate: 0 0; }
-  12% { filter: brightness(2.1) saturate(0.15); translate: -7px 0; }
-  24% { translate: 7px 0; }
-  36% { translate: -5px 0; }
-  48% { filter: brightness(1.7) saturate(0.25); translate: 3px 0; }
-  60% { translate: 0 0; }
-  100% { filter: brightness(1) saturate(1); }
+  0%, 60%, 100% { transform: translateX(0); }
+  12% { transform: translateX(-7px); }
+  24% { transform: translateX(7px); }
+  36% { transform: translateX(-5px); }
+  48% { transform: translateX(3px); }
+}
+.range::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(180deg, rgba(240, 249, 255, 0.75), rgba(200, 225, 245, 0.45));
+}
+.range.is-struck::after { animation: whiteout 1.4s ease-out; }
+@keyframes whiteout {
+  0% { opacity: 0; }
+  12% { opacity: 0.85; }
+  48% { opacity: 0.55; }
+  100% { opacity: 0; }
 }
 
 /* ─────────────── Pult: Cashpot, Walze, Meldung ─────────────── */
@@ -439,10 +455,21 @@ button:disabled { cursor: not-allowed; }
 }
 .cashpot__sub { min-height: 1.2em; font-size: 12px; color: var(--muted); }
 .cashpot { position: relative; }
-.cashpot.lost { background: rgba(255, 79, 109, 0.22); animation: lost-pulse 1.4s ease-out; }
+.cashpot.lost { background: rgba(255, 79, 109, 0.22); }
+/* roter Rahmen-Puls als eigene Ebene: nur die Deckkraft ändert sich */
+.cashpot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: inset 0 0 0 2px rgba(255, 79, 109, 0.9), 0 0 30px rgba(255, 79, 109, 0.5);
+}
+.cashpot.lost::after { animation: lost-pulse 1.4s ease-out; }
 @keyframes lost-pulse {
-  0%, 40% { box-shadow: inset 0 0 0 2px rgba(255, 79, 109, 0.9), 0 0 30px rgba(255, 79, 109, 0.5); }
-  100% { box-shadow: none; }
+  0%, 40% { opacity: 1; }
+  100% { opacity: 0; }
 }
 /* Cashpot zählt nach dem Schneesturm rot auf $0 herunter */
 .cashpot__value.is-draining { color: var(--danger); text-shadow: 0 0 22px rgba(255, 79, 109, 0.7); }
@@ -527,8 +554,8 @@ button:disabled { cursor: not-allowed; }
   box-shadow: 0 0 22px rgba(255, 79, 109, 0.7), inset 0 0 22px rgba(255, 79, 109, 0.35);
 }
 .reel-frame.is-storm .payline__arrow { background: var(--danger); filter: drop-shadow(0 0 6px var(--danger)); }
-.reel-frame.is-storm .strip .cell:nth-child(2) { animation: storm-symbol 0.45s ease-in-out 3; }
-@keyframes storm-symbol { 50% { transform: scale(1.18) rotate(-8deg); filter: drop-shadow(0 0 14px rgba(255, 79, 109, 0.95)); } }
+.reel-frame.is-storm .strip .cell:nth-child(2) > * { animation: storm-symbol 0.45s ease-in-out 3; filter: drop-shadow(0 0 12px rgba(255, 79, 109, 0.9)); }
+@keyframes storm-symbol { 50% { transform: scale(1.18) rotate(-8deg); } }
 .payline__arrow {
   position: absolute;
   top: 50%;
@@ -1756,10 +1783,11 @@ body.is-storm .ticker { animation: ticker-shake 0.5s ease-in-out 2; }
 
 /* ─────────────── Effekte ─────────────── */
 .flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; z-index: 10; }
-.flash.devil { animation: flash-red 0.7s ease-out; }
-.flash.win { animation: flash-gold 0.9s ease-out; }
-@keyframes flash-red { from { opacity: 0.45; background: radial-gradient(circle, var(--danger), transparent 70%); } to { opacity: 0; } }
-@keyframes flash-gold { from { opacity: 0.35; background: radial-gradient(circle, var(--gold), transparent 70%); } to { opacity: 0; } }
+/* Farbe fest, animiert wird nur die Deckkraft (kein Neuzeichnen pro Bild) */
+.flash.devil { background: radial-gradient(circle, var(--danger), transparent 70%); animation: flash-red 0.7s ease-out; }
+.flash.win { background: radial-gradient(circle, var(--gold), transparent 70%); animation: flash-gold 0.9s ease-out; }
+@keyframes flash-red { from { opacity: 0.45; } to { opacity: 0; } }
+@keyframes flash-gold { from { opacity: 0.35; } to { opacity: 0; } }
 .shake { animation: shake 0.45s; }
 @keyframes shake {
   20%, 60% { transform: translateX(-8px); }

@@ -3,6 +3,32 @@
   const CONFIG = window.SUSAK_CONFIG;
   const engine = new window.SusakEngine(CONFIG);
 
+  // ---------- Im Browser gespeichert: Guthaben, Einsatz, Autoplay-Einstellungen ----------
+  const STORE = 'susak.state';
+  const saved = (() => {
+    try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (_) { return {}; }
+  })();
+  if (Number.isFinite(saved.balance) && saved.balance >= 0) engine.balance = saved.balance;
+  if (CONFIG.bets.includes(saved.bet)) engine.bet = saved.bet;
+  let lastSaved = '';
+  function saveState() {
+    // Was schon sicher ist, zählt zum Guthaben: offener Cashpot, Kartenspiel-Betrag und im Bonus
+    // der gesicherte Gipfel-Cashpot samt Jackpot. Wird die Seite mitten in einer Runde neu geladen,
+    // ist das so, als hätte man gesammelt – laufende Freispiele gehen dabei verloren.
+    const b = engine.bonus;
+    const banked = engine.balance + engine.cashpot + (engine.gamble?.amount ?? 0)
+      + (b ? (b.carried ?? 0) + (b.jackpot ?? 0) : 0);
+    const data = JSON.stringify({
+      balance: Math.round(banked * 100) / 100,
+      bet: engine.bet,
+      autoCollect: Number(el.autoCollect?.value ?? CONFIG.autoplay.defaultCollectAt),
+      autoStopSummit: el.autoStopSummit?.checked ?? true,
+    });
+    if (data === lastSaved) return;
+    lastSaved = data;
+    try { localStorage.setItem(STORE, data); } catch (_) { /* ohne Speicher */ }
+  }
+
   const $ = (id) => document.getElementById(id);
   const sfx = window.sfx;
   const el = {
@@ -314,6 +340,7 @@
 
   // ---------- Darstellung ----------
   function render(shown = engine) {
+    saveState();
     el.balance.textContent = fmt(shown.balance);
     countTo(el.cashpot, shown.cashpot);
     // Während der Freispiele gelten alle Beträge mit dem Multiplikator der Glücksscheibe
@@ -381,6 +408,7 @@
     const st = counters.get(node) ?? { shown: value, raf: 0 };
     counters.set(node, st);
     cancelAnimationFrame(st.raf);
+    node.classList.remove('is-draining'); // ein abgebrochenes Herunterzählen darf nicht rot bleiben
     if (drainNext && value < st.shown && !reducedMotion) {
       drainNext = false;
       const from = st.shown;
@@ -1812,6 +1840,12 @@
   startSnow();
   setupCalmMode();
   fillAutoMenu();
+  // gespeicherte Autoplay-Einstellungen übernehmen und Änderungen merken
+  if (CONFIG.autoplay.collectAt.includes(saved.autoCollect) || saved.autoCollect === 0) el.autoCollect.value = String(saved.autoCollect);
+  if (typeof saved.autoStopSummit === 'boolean') el.autoStopSummit.checked = saved.autoStopSummit;
+  el.autoCollect.addEventListener('change', saveState);
+  el.autoStopSummit.addEventListener('change', saveState);
+  addEventListener('pagehide', saveState);
   showStatic(shownSymbols);
   render();
 })();
